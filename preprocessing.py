@@ -4,11 +4,16 @@ from os import path
 import csv
 
 class GroupData(object):
+    '''
+    inputData: csv file with input data
+    classData: csv file with classifier data
+    '''
     def init(self, inputData, classData):
         self.inputData = inputData
         self.classData = classData
 
     def getData(self):
+        '''Returns a tuple with the flat data and the corresponding classifier'''
         while True:
             line = self.inputData.getLine()
             classifier = self.classData.getClassifier()
@@ -18,6 +23,12 @@ class GroupData(object):
                 yield (line, classifier)
 
 class Data(object):
+    '''
+    csvfile: type string: Input file in csv format
+    width: type int: width of each row for the csv file
+    height: type int: number of rows in the csv file
+    window: type int: number that describes the height and width of how much data the neural network will take in
+    '''
     def init(self, csvfile, width, height, window):
         self.csvfile = csvfile
         self.width = width
@@ -26,6 +37,9 @@ class Data(object):
         self.middleIndex = (window / 2)
 
     def initializeCurrentLines(reader, datatype):
+        '''
+        Initializes lines for processing data
+        '''
         frame = []
         if(datatype == 'line'):
             for _ in range(self.window):
@@ -39,6 +53,10 @@ class Data(object):
         return frame
 
     def getLine(self):
+        '''
+        Takes a csv file and returns a generator function
+        that will return a flat list of the moving window
+        '''
         with open(self.csvfile) as infile:
             reader = csv.reader(infile)
             frames = initializeFrame(reader, "line")
@@ -55,6 +73,9 @@ class Data(object):
 
 
     def getClassifier(self):
+        '''
+        Opens a csv and yields the number in the middle of the moving window
+        '''
         with open(self.csvfile) as infile:
             reader = csv.reader(infile)
             frame = initializeFrame(reader, "classifier")
@@ -65,23 +86,28 @@ class Data(object):
                 frame = row
 
 def getDemensions(openfile):
+    '''Get the height and width from the binary file'''
     dims = next(openfile).strip().split(" ")
     width, height = map(int, dims)
     return (width, height)
 
 def cleandata(binary):
+    '''converts from binary to decimal'''
     #convert binary to integers
     data = binary.replace("\xff", "")
     return [ord(d) for d in data]
 
 def getFileName(file):
+    '''creates a new file'''
     return "cleaned_" + file + ".csv"
 
 def getrows(data, width):
+    '''gets rows for csv file'''
     for pos in range(0, len(data), width):
         yield data[pos: pos + width]
 
 def saveToFile(filename, data, lineLength):
+    '''creates new csv file from decoded binary data'''
     with open(filename, "w") as outfile:
         writer = csv.writer(outfile)
         for row in getrows(cleaneddata, lineLength):
@@ -91,6 +117,7 @@ def saveToFile(filename, data, lineLength):
 
 
 def cleanBinary(file):
+    '''cleans the binary file'''
     binaryfile = open(file, "rb")
     width, height = getDemensions(binaryfile)
     cleaneddata = cleandata(binaryfile.read())
@@ -100,6 +127,10 @@ def cleanBinary(file):
 
 
 def getData(inputData, alphaData):
+    '''
+    returns a generator variable containing
+    tuples of (flat_window, classifier)
+    '''
     group = GroupData(inputData, alphaData)
     return group.getData()
 
@@ -117,3 +148,4 @@ def preprocess(inputFile, alphaFile, window):
             return getData(inputData, alphaData, window)
     else:
         raise Exception("One of the files don't exists, can't preprocess them")
+
