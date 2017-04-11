@@ -1,3 +1,4 @@
 *.input
 *.alpha
 *.csv
+__pycache__
