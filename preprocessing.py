@@ -2,17 +2,18 @@
 
 from os import path
 import csv
+import sys
 
 class GroupData(object):
     '''
     inputData: csv file with input data
     classData: csv file with classifier data
     '''
-    def init(self, inputData, classData):
+    def __init__(self, inputData, classData):
         self.inputData = inputData
         self.classData = classData
 
-    def getData(self):
+    def getData(self, window):
         '''Returns a tuple with the flat data and the corresponding classifier'''
         while True:
             line = self.inputData.getLine()
@@ -29,14 +30,14 @@ class Data(object):
     height: type int: number of rows in the csv file
     window: type int: number that describes the height and width of how much data the neural network will take in
     '''
-    def init(self, csvfile, width, height, window):
+    def __init__(self, csvfile, width, height, window):
         self.csvfile = csvfile
         self.width = width
         self.height = height
         self.window = window
         self.middleIndex = (window / 2)
 
-    def initializeCurrentLines(reader, datatype):
+    def initializeCurrentLines(self, reader, datatype):
         '''
         Initializes lines for processing data
         '''
@@ -87,15 +88,23 @@ class Data(object):
 
 def getDemensions(openfile):
     '''Get the height and width from the binary file'''
-    dims = next(openfile).strip().split(" ")
+    try:
+        dims = (openfile)
+        dims = dims.strip().split(' ')
+        print(dims)
+    except:
+        dims = next(openfile)
+        dims = dims.decode("utf-8")
+        dims = dims.strip()
+        dims = dims.split(' ')
     width, height = map(int, dims)
     return (width, height)
 
 def cleandata(binary):
     '''converts from binary to decimal'''
     #convert binary to integers
-    data = binary.replace("\xff", "")
-    return [ord(d) for d in data]
+#    data = binary.replace("0xff", "")
+    return [d for d in binary]
 
 def getFileName(file):
     '''creates a new file'''
@@ -110,29 +119,29 @@ def saveToFile(filename, data, lineLength):
     '''creates new csv file from decoded binary data'''
     with open(filename, "w") as outfile:
         writer = csv.writer(outfile)
-        for row in getrows(cleaneddata, lineLength):
+        for row in getrows(data, lineLength):
             rowstr = map(str, row)
             writer.writerow(rowstr)
     return filename
 
 
 def cleanBinary(file):
-    '''cleans the binary file'''
+    '''cleans the binary file as in converts from binary to integers'''
     binaryfile = open(file, "rb")
     width, height = getDemensions(binaryfile)
     cleaneddata = cleandata(binaryfile.read())
-    filename, saveToFile(getFileName(file), cleaneddata, width)
-    infile.close()
+    filename = saveToFile(getFileName(file), cleaneddata, width)
+    binaryfile.close()
     return (filename, width, height)
 
 
-def getData(inputData, alphaData):
+def getDataFromFiles(inputData, alphaData, window):
     '''
     returns a generator variable containing
     tuples of (flat_window, classifier)
     '''
     group = GroupData(inputData, alphaData)
-    return group.getData()
+    return group.getData(window)
 
 def preprocess(inputFile, alphaFile, window):
     if (window % 2 == 0):
@@ -145,7 +154,14 @@ def preprocess(inputFile, alphaFile, window):
         else:
             inputData = Data(inputcsv, inputWidth, inputHeight, window)
             alphaData = Data(alphacsv, alphaWidth, alphaHeight, window)
-            return getData(inputData, alphaData, window)
+#            groups = GroupData(inputData, alphaData)
+            return getDataFromFiles(inputData, alphaData, window)
     else:
         raise Exception("One of the files don't exists, can't preprocess them")
 
+if __name__ == "__main__":
+    if(len(sys.argv) != 4):
+        raise Exception("must include <inputFile> <alphaFile> <WindowSize>")
+    _, inputFile, alphaFile, window = sys.argv
+    print(inputFile, alphaFile, window)
+    preprocess(inputFile, alphaFile, int(window))
