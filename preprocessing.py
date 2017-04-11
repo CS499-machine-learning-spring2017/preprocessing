@@ -15,13 +15,15 @@ class GroupData(object):
 
     def getData(self, window):
         '''Returns a tuple with the flat data and the corresponding classifier'''
+        line = self.inputData.getLine()
+        classifier = self.classData.getClassifier()
         while True:
-            line = self.inputData.getLine()
-            classifier = self.classData.getClassifier()
-            if((line is None) or (classifier is None)):
+            newline = next(line)
+            newclassifier = next(classifier)
+            if((newline is None) or (newclassifier is None)):
                 break
             else:
-                yield (line, classifier)
+                yield (newline, newclassifier)
 
 class Data(object):
     '''
@@ -35,23 +37,23 @@ class Data(object):
         self.width = width
         self.height = height
         self.window = window
-        self.middleIndex = (window / 2)
+        self.middleIndex = int(window // 2)
 
-    def initializeCurrentLines(self, reader, datatype):
+    def initializeFrame(self, reader, datatype):
         '''
         Initializes lines for processing data
         '''
-        frame = []
         if(datatype == 'line'):
+            frame = []
             for _ in range(self.window):
                 row = next(reader)
-                row = map(int, row)
+                row = list(map(int, row))
                 frame.append(row)
+            return frame
         else:
-            for _ in range((self.window / 2)):
+            for _ in range((self.window // 2)):
                 next(reader)
-            frame = map(int, next(reader))
-        return frame
+            return
 
     def getLine(self):
         '''
@@ -60,9 +62,10 @@ class Data(object):
         '''
         with open(self.csvfile) as infile:
             reader = csv.reader(infile)
-            frames = initializeFrame(reader, "line")
+            frames = self.initializeFrame(reader, "line")
+            print(len(frames))
             for row in reader:
-                row = map(int, frame)
+                row = map(int, row)
                 for currIndex in range(self.middleIndex, self.width - self.middleIndex + 1):
                     minIndex = currIndex - self.middleIndex
                     maxIndex = currIndex + self.middleIndex + 1
@@ -79,12 +82,11 @@ class Data(object):
         '''
         with open(self.csvfile) as infile:
             reader = csv.reader(infile)
-            frame = initializeFrame(reader, "classifier")
+            _ = self.initializeFrame(reader, "classifier")
             for row in reader:
-                map(int, frame)
+                row = list(map(int, row))
                 for currIndex in range(self.middleIndex, self.width - self.middleIndex + 1):
-                    yield frame[currIndex]
-                frame = row
+                    yield row[currIndex]
 
 def getDemensions(openfile):
     '''Get the height and width from the binary file'''
