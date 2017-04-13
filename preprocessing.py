@@ -18,8 +18,17 @@ class GroupData(object):
         line = self.inputData.getLine()
         classifier = self.classData.getClassifier()
         while True:
-            newline = next(line)
-            newclassifier = next(classifier)
+            try:
+                newline = next(line)
+                newclassifier = next(classifier)
+            except IndexError:
+                print("There was an issue with getting the correct information from the file!!!")
+                newline = None
+                newclassifier = None
+            except Exception as e:
+                newline = None
+                newclassifier = None
+                print("unknown error: {}".format(e))
             if((newline is None) or (newclassifier is None)):
                 break
             else:
