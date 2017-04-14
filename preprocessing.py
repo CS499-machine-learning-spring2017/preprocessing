@@ -77,7 +77,7 @@ class Data(object):
                 row = map(int, row)
                 for currIndex in range(self.middleIndex, self.width - self.middleIndex + 1):
                     minIndex = currIndex - self.middleIndex
-                    maxIndex = currIndex + self.middleIndex + 1
+                    maxIndex = currIndex + self.middleIndex
                     newdata = [frame[minIndex: maxIndex] for frame in frames]
                     #flatten the moving window
                     yield [num for data in newdata for num in data]
