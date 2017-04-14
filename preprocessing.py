@@ -119,7 +119,9 @@ def cleandata(binary):
 
 def getFileName(file):
     '''creates a new file'''
-    return "cleaned_" + file + ".csv"
+    filepath = file.split('/')
+    filepath[-1] = "cleaned_" + filepath[-1] + ".csv"
+    return  "/".join(filepath)
 
 def getrows(data, width):
     '''gets rows for csv file'''
