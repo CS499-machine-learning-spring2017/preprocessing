@@ -4,7 +4,7 @@
 ## Binary File format
 Expected file format is to have the height and width on the first line not in binary, then the following line to contain binary data.
 
-##Usage
+## Usage
 ```
 from preprocessing import preprocess
 
