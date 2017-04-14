@@ -74,7 +74,7 @@ class Data(object):
             frames = self.initializeFrame(reader, "line")
             print(len(frames))
             for row in reader:
-                row = map(int, row)
+                row = list(map(int, row))
                 for currIndex in range(self.middleIndex, self.width - self.middleIndex + 1):
                     minIndex = currIndex - self.middleIndex
                     maxIndex = currIndex + self.middleIndex
