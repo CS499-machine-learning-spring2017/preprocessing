@@ -2,3 +2,4 @@
 *.alpha
 *.csv
 __pycache__
+data*
