@@ -88,12 +88,15 @@ class Data(object):
             frames = self.initializeFrame(reader, "line")
             for row in reader:
                 row = list(map(int, row))
-                for currIndex in range(self.middleIndex, self.width - self.middleIndex + 1):
+                for currIndex in range(self.middleIndex, self.width - self.middleIndex):
                     minIndex = currIndex - self.middleIndex
                     maxIndex = currIndex + self.middleIndex + 1
-                    newdata = [frame[minIndex: maxIndex] for frame in frames]
-                    #flatten the moving window
-                    yield [num for data in newdata for num in data]
+                    try:
+                        newdata = [frame[minIndex: maxIndex] for frame in frames]
+                        #flatten the moving window
+                        yield [num for data in newdata for num in data]
+                    except:
+                        yield None
                 #get new frame
                 frames = frames[1:] + [row]
             return
@@ -108,7 +111,7 @@ class Data(object):
             _ = self.initializeFrame(reader, "classifier")
             for row in reader:
                 row = list(map(int, row))
-                for currIndex in range(self.middleIndex, self.width - self.middleIndex + 1):
+                for currIndex in range(self.middleIndex, self.width - self.middleIndex):
                     yield row[currIndex]
             return
 
