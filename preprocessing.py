@@ -3,6 +3,8 @@
 from os import path
 import csv
 import sys
+from collections import Counter
+import json
 
 class GroupData(object):
     '''
@@ -17,6 +19,9 @@ class GroupData(object):
         '''Returns a tuple with the flat data and the corresponding classifier'''
         line = self.inputData.getLine()
         classifier = self.classData.getClassifier()
+        # print(self.classData.counts)
+        minClassCounter = min(self.classData.counts.values())
+        classCounter = {}
         while True:
             try:
                 newline = next(line)
@@ -29,8 +34,13 @@ class GroupData(object):
                 newline = None
                 newclassifier = None
                 print("unknown error: {}".format(e))
+
             if((newline is None) or (newclassifier is None)):
                 break
+
+            classCounter[newclassifier] = classCounter.get(newclassifier, 0) + 1
+            if(classCounter[newclassifier] > minClassCounter):
+                continue
             else:
                 yield (newline, newclassifier)
 
@@ -41,12 +51,13 @@ class Data(object):
     height: type int: number of rows in the csv file
     window: type int: number that describes the height and width of how much data the neural network will take in
     '''
-    def __init__(self, csvfile, width, height, window):
+    def __init__(self, csvfile, width, height, window, counts = {}):
         self.csvfile = csvfile
         self.width = width
         self.height = height
         self.window = window
         self.middleIndex = int(window // 2)
+        self.counts = counts
 
     def initializeFrame(self, reader, datatype):
         '''
@@ -97,12 +108,33 @@ class Data(object):
                 for currIndex in range(self.middleIndex, self.width - self.middleIndex + 1):
                     yield row[currIndex]
 
+class Counts(object):
+
+    def __init__(self, data, width, window):
+        self.cleandata = data
+        self.width = width
+        self.halfwindow = window // 2
+        self.counter = Counter()
+
+    def count(self):
+        for pos in range(0, len(self.cleandata), self.width):
+            subdata = self.cleandata[pos: pos + self.width]
+            print("Here is the halfwindow: {}".format(self.halfwindow))
+            print("Here is the first lenght: {}".format(len(subdata)))
+            subdata = subdata[self.halfwindow : -1 * self.halfwindow]
+            print("Here is the second length: {}".format(len(subdata)))
+            self.counter.update(subdata)
+            break
+
+    def data(self):
+        return dict(self.counter)
+
+
 def getDemensions(openfile):
     '''Get the height and width from the binary file'''
     try:
         dims = (openfile)
         dims = dims.strip().split(' ')
-        print(dims)
     except:
         dims = next(openfile)
         dims = dims.decode("utf-8")
@@ -117,10 +149,10 @@ def cleandata(binary):
 #    data = binary.replace("0xff", "")
     return [d for d in binary]
 
-def getFileName(file):
+def getFileName(file, extension = 'csv'):
     '''creates a new file'''
     filepath = file.split('/')
-    filepath[-1] = "cleaned_" + filepath[-1] + ".csv"
+    filepath[-1] = "cleaned_" + filepath[-1] + "." + extension
     return  "/".join(filepath)
 
 def getrows(data, width):
@@ -137,16 +169,41 @@ def saveToFile(filename, data, lineLength):
             writer.writerow(rowstr)
     return filename
 
+def countClassifiers(data, width, window):
+    counts = Counts(data, width, window)
+    counts.count()
+    return counts.data()
 
-def cleanBinary(file):
+def saveDemensions(file, width, height, window, cleaneddata, classifier):
+    data = {'width':width, 'height':height}
+    counts = None
+    if(classifier):
+        counts = countClassifiers(cleaneddata, width, window)
+        data['counts'] = counts
+    jsonFile = getFileName(file, "json")
+    outfile = open(jsonFile, "w")
+    outfile.write(json.dumps(data))
+    outfile.close()
+    return counts
+
+def cleanBinary(file, classifier = False, window = 1):
     '''cleans the binary file as in converts from binary to integers'''
-    binaryfile = open(file, "rb")
-    width, height = getDemensions(binaryfile)
-    cleaneddata = cleandata(binaryfile.read())
-    filename = saveToFile(getFileName(file), cleaneddata, width)
-    binaryfile.close()
-    return (filename, width, height)
-
+    jsonFile = getFileName(file, "json")
+    if(path.isfile(jsonFile)):
+        filename = getFileName(file)
+        data = json.loads((open(jsonFile).read()))
+        width = data.get('width')
+        height = data.get('height')
+        counts = data.get('counts', {})
+    else:
+        binaryfile = open(file, "rb")
+        width, height = getDemensions(binaryfile)
+        cleaneddata = cleandata(binaryfile.read())
+        filename = saveToFile(getFileName(file), cleaneddata, width)
+        counts  = saveDemensions(file, width, height, window, cleaneddata, classifier)
+        binaryfile.close()
+    # print(filename, width, height, counts)
+    return (filename, width, height, counts)
 
 def getDataFromFiles(inputData, alphaData, window):
     '''
@@ -160,13 +217,13 @@ def preprocess(inputFile, alphaFile, window):
     if (window % 2 == 0):
         raise Exception("Window must be an odd Integer")
     if (path.isfile(inputFile) and path.isfile(alphaFile)):
-        (inputcsv, inputWidth, inputHeight) = cleanBinary(inputFile)
-        (alphacsv, alphaWidth, alphaHeight) = cleanBinary(alphaFile)
+        (inputcsv, inputWidth, inputHeight, _) = cleanBinary(inputFile)
+        (alphacsv, alphaWidth, alphaHeight, counts) = cleanBinary(alphaFile, classifier = True, window = window)
         if((inputWidth != alphaWidth) or (inputHeight != alphaHeight)):
             raise Exception("Non-matching data files")
         else:
             inputData = Data(inputcsv, inputWidth, inputHeight, window)
-            alphaData = Data(alphacsv, alphaWidth, alphaHeight, window)
+            alphaData = Data(alphacsv, alphaWidth, alphaHeight, window, counts)
 #            groups = GroupData(inputData, alphaData)
             return getDataFromFiles(inputData, alphaData, window)
     else:
