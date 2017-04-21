@@ -3,3 +3,6 @@
 *.csv
 __pycache__
 data*
+*.pyc
+clean.sh
+*.swp
