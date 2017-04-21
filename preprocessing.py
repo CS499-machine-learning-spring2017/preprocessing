@@ -235,33 +235,50 @@ def countClassifiers(data, width, window):
     return dict(counts)
 
 def saveDemensions(file, width, height, window, cleaneddata, classifier):
+    # Save the data in a json file
+    # This data is availible and need for each type of file
     data = {'width':width, 'height':height, 'window': window}
     counts = None
+    # if the file contains classifications, find the counts
     if(classifier):
         counts = countClassifiers(cleaneddata, width, window)
+        # save the counts in the data dictionary
         data['counts'] = counts
+    # create the name for the json file
     jsonFile = getFileName(file, "json")
+    # open it up for writing
     outfile = open(jsonFile, "w")
+    # save the data
     outfile.write(json.dumps(data))
+    # close the json file
     outfile.close()
+    # return the counts for use in generating the data
     return counts
 
 def getJsonData(file):
     jsonFile = getFileName(file, "json")
     filename = getFileName(file)
+    # checks to see if the json file exists
     if(path.isfile(jsonFile)):
+        # If it does, then it loads in the data
         data = json.loads((open(jsonFile).read()))
-        width = data.get('width')
-        height = data.get('height')
-        window = data.get('window', 0)
+        width = int(data.get('width', 0))
+        height = int(data.get('height', 0))
+        window = int(data.get('window', 0))
         counts = data.get('counts', {})
+        # Returns the data used to return more data to the neural network
         return (filename, width, height, window, counts)
     else:
+        # else it returns the filename and the -1 for the winow will make 
+        # the getDemensions function to run
         return(filename, 0, 0, -1, None)
 
 def cleanBinary(file, classifier = False, window = 1):
     '''cleans the binary file as in converts from binary to integers'''
+    # Get demensions if they exist
     filename, width, height, datawindow, counts = getJsonData(file)
+    # if the window in the file is different than the one from input,
+    # recalculate the counts
     if(datawindow != window):
         binaryfile = open(file, "rb")
         width, height = getDemensions(binaryfile)
