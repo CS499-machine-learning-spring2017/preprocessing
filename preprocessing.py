@@ -23,18 +23,25 @@ class GroupData(object):
         minClassCounter = min(self.classData.counts.values())
         classCounter = {}
         rowcount = 0
-        while True:
+        shouldContinue = True
+        while shouldContinue:
             try:
                 newline = next(line)
                 newclassifier = next(classifier)
-            # except IndexError:
-                # print("There was an issue with getting the correct information from the file!!!")
-                # newline = None
-                # newclassifier = None
-            except Exception as e:
+            except StopIteration:
+                shouldContinue = False
+            except IndexError:
+                print("There was an issue with getting the correct information from the file!!!")
                 newline = None
                 newclassifier = None
+                shouldContinue = False
+
+            except Exception as e:
                 print("unknown error: {}".format(e))
+                print(newline, newclassifier)
+                newline = None
+                newclassifier = None
+                shouldContinue = False
 
             if((newline is None) or (newclassifier is None)):
                 break
@@ -46,6 +53,7 @@ class GroupData(object):
                 rowcount += 1
                 yield (newline, newclassifier)
         print(rowcount)
+        return None
 
 class Data(object):
     '''
@@ -91,15 +99,12 @@ class Data(object):
                 for currIndex in range(self.middleIndex, self.width - self.middleIndex):
                     minIndex = currIndex - self.middleIndex
                     maxIndex = currIndex + self.middleIndex + 1
-                    try:
-                        newdata = [frame[minIndex: maxIndex] for frame in frames]
-                        #flatten the moving window
-                        yield [num for data in newdata for num in data]
-                    except:
-                        yield None
+                    newdata = [frame[minIndex: maxIndex] for frame in frames]
+                    #flatten the moving window
+                    yield [num for data in newdata for num in data]
                 #get new frame
                 frames = frames[1:] + [row]
-            return
+        return
 
 
     def getClassifier(self):
@@ -113,7 +118,7 @@ class Data(object):
                 row = list(map(int, row))
                 for currIndex in range(self.middleIndex, self.width - self.middleIndex):
                     yield row[currIndex]
-            return
+        return
 
 class Counts(object):
 
