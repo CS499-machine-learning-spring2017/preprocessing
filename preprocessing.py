@@ -22,14 +22,15 @@ class GroupData(object):
         # print(self.classData.counts)
         minClassCounter = min(self.classData.counts.values())
         classCounter = {}
+        rowcount = 0
         while True:
             try:
                 newline = next(line)
                 newclassifier = next(classifier)
-            except IndexError:
-                print("There was an issue with getting the correct information from the file!!!")
-                newline = None
-                newclassifier = None
+            # except IndexError:
+                # print("There was an issue with getting the correct information from the file!!!")
+                # newline = None
+                # newclassifier = None
             except Exception as e:
                 newline = None
                 newclassifier = None
@@ -42,7 +43,9 @@ class GroupData(object):
             if(classCounter[newclassifier] > minClassCounter):
                 continue
             else:
+                rowcount += 1
                 yield (newline, newclassifier)
+        print(rowcount)
 
 class Data(object):
     '''
@@ -83,17 +86,17 @@ class Data(object):
         with open(self.csvfile) as infile:
             reader = csv.reader(infile)
             frames = self.initializeFrame(reader, "line")
-            print(len(frames))
             for row in reader:
                 row = list(map(int, row))
                 for currIndex in range(self.middleIndex, self.width - self.middleIndex + 1):
                     minIndex = currIndex - self.middleIndex
-                    maxIndex = currIndex + self.middleIndex
+                    maxIndex = currIndex + self.middleIndex + 1
                     newdata = [frame[minIndex: maxIndex] for frame in frames]
                     #flatten the moving window
                     yield [num for data in newdata for num in data]
                 #get new frame
                 frames = frames[1:] + [row]
+            return
 
 
     def getClassifier(self):
@@ -107,6 +110,7 @@ class Data(object):
                 row = list(map(int, row))
                 for currIndex in range(self.middleIndex, self.width - self.middleIndex + 1):
                     yield row[currIndex]
+            return
 
 class Counts(object):
 
@@ -119,12 +123,8 @@ class Counts(object):
     def count(self):
         for pos in range(0, len(self.cleandata), self.width):
             subdata = self.cleandata[pos: pos + self.width]
-            print("Here is the halfwindow: {}".format(self.halfwindow))
-            print("Here is the first lenght: {}".format(len(subdata)))
             subdata = subdata[self.halfwindow : -1 * self.halfwindow]
-            print("Here is the second length: {}".format(len(subdata)))
             self.counter.update(subdata)
-            break
 
     def data(self):
         return dict(self.counter)
@@ -233,5 +233,4 @@ if __name__ == "__main__":
     if(len(sys.argv) != 4):
         raise Exception("must include <inputFile> <alphaFile> <WindowSize>")
     _, inputFile, alphaFile, window = sys.argv
-    print(inputFile, alphaFile, window)
     preprocess(inputFile, alphaFile, int(window))
