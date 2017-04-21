@@ -15,12 +15,22 @@ class GroupData(object):
         self.inputData = inputData
         self.classData = classData
 
+    def getEncoder(self, values):
+        encoder = {}
+        for i, num in enumerate(values):
+            data = [0 for _ in range(len(values))]
+            data[i] = 1
+            encoder[int(num)] = data
+        return encoder
+
     def getData(self, window):
         '''Returns a tuple with the flat data and the corresponding classifier'''
         line = self.inputData.getLine()
         classifier = self.classData.getClassifier()
         # print(self.classData.counts)
         minClassCounter = min(self.classData.counts.values())
+        hotEncoder = self.getEncoder(sorted(self.classData.counts.keys()))
+        print(hotEncoder)
         classCounter = {}
         rowcount = 0
         shouldContinue = True
@@ -51,7 +61,7 @@ class GroupData(object):
                 continue
             else:
                 rowcount += 1
-                yield (newline, newclassifier)
+                yield (newline, hotEncoder[newclassifier])
         print(rowcount)
         return None
 
