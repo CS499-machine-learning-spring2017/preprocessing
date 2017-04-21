@@ -183,7 +183,7 @@ def countClassifiers(data, width, window):
     return counts.data()
 
 def saveDemensions(file, width, height, window, cleaneddata, classifier):
-    data = {'width':width, 'height':height}
+    data = {'width':width, 'height':height, 'window': window}
     counts = None
     if(classifier):
         counts = countClassifiers(cleaneddata, width, window)
