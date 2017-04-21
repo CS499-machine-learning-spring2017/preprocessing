@@ -194,16 +194,23 @@ def saveDemensions(file, width, height, window, cleaneddata, classifier):
     outfile.close()
     return counts
 
-def cleanBinary(file, classifier = False, window = 1):
-    '''cleans the binary file as in converts from binary to integers'''
+def getJsonData(file):
     jsonFile = getFileName(file, "json")
+    filename = getFileName(file)
     if(path.isfile(jsonFile)):
-        filename = getFileName(file)
         data = json.loads((open(jsonFile).read()))
         width = data.get('width')
         height = data.get('height')
+        window = data.get('window', 0)
         counts = data.get('counts', {})
+        return (filename, width, height, window, counts)
     else:
+        return(filename, 0, 0, -1, None)
+
+def cleanBinary(file, classifier = False, window = 1):
+    '''cleans the binary file as in converts from binary to integers'''
+    filename, width, height, datawindow, counts = getJsonData(file)
+    if(datawindow != window):
         binaryfile = open(file, "rb")
         width, height = getDemensions(binaryfile)
         cleaneddata = cleandata(binaryfile.read())
