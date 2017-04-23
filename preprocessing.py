@@ -180,11 +180,12 @@ def getDemensions(openfile):
     dims = openfile.readline().strip()
 #    dims = dims.strip('\n')[0]
     try:
-        # First row of data in the data files are height and width
-        dims = dims.strip().split(' ')
+        dims = dims.decode("utf-8")
+        dims = dims.strip()
+        dims = dims.split(' ')
     except Exception as e:
         dims = [chr(dim) for dim in dims]
-    dims = list(filter(lambda d: d != ' ', dims))
+        dims = list(filter(lambda d: d != ' ', dims))
     dims = list(map(int, dims))
     width, height = dims
     return (width, height)
