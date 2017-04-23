@@ -175,24 +175,18 @@ class Counts(object):
             subdata = subdata[self.halfwindow : -1 * self.halfwindow]
             self.counter.update(subdata)
 
-    def __dict__(self):
-        # return a dictionary of the counter object
-        return dict(self.counter)
-
-
 def getDemensions(openfile):
     '''Get the height and width from the binary file'''
+    dims = openfile.readline().strip()
+#    dims = dims.strip('\n')[0]
     try:
         # First row of data in the data files are height and width
-        dims = next(openfile)
         dims = dims.strip().split(' ')
-    except:
-        dims = next(openfile)
-        dims = dims.decode("utf-8")
-        dims = dims.strip()
-        dims = dims.split(' ')
-    # they can't be strings
-    width, height = map(int, dims)
+    except Exception as e:
+        dims = [chr(dim) for dim in dims]
+    dims = list(filter(lambda d: d != ' ', dims))
+    dims = list(map(int, dims))
+    width, height = dims
     return (width, height)
 
 def cleandata(binary):
@@ -232,7 +226,7 @@ def countClassifiers(data, width, window):
     # count everything up based on width and window size
     counts.count()
     # return a dictinary of the data
-    return dict(counts)
+    return dict(counts.counter)
 
 def saveDemensions(file, width, height, window, cleaneddata, classifier):
     # Save the data in a json file
