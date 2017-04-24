@@ -6,6 +6,22 @@ import sys
 from collections import Counter
 import json
 
+'''
+Preprocessing.py
+The purpose of this file is to convert data from the input and alpha (classifiers) file
+into usable data for the neural network
+
+This is done by first opening the binary file and extracting the height and width from the first line.
+Then the second line is one long string of binary data representing an image. From there, the classification are counted. 
+This is so we can proivide a uniform distribution of classifiers to the neural network.
+
+From there, data about the files are saved to a Json file. This is so that if the file is there, then we can assume the file has been processed, thus skipping looping through the data and making the process faster.
+The decoded data is formatted and saved to a csv file for the next step.
+
+The final stop is to loop through the saved csv file and generating combinations of data for the neural network and the
+corresponding classifier for that point on the image.
+'''
+
 class GroupData(object):
     '''
     inputData: csv file with input data
@@ -32,36 +48,26 @@ class GroupData(object):
         # and return them to the neural network
         line = self.inputData.getLine()
         classifier = self.classData.getClassifier()
+
         # print(self.classData.counts)
         # Find the minimun value of the classifier and limit all results to that 
         minClassCounter = min(self.classData.counts.values())
         #Create the one hot encoder
         hotEncoder = self.getEncoder(sorted(self.classData.counts.keys()))
+        # classification counter
         classCounter = {}
-        rowcount = 0
+        # boolean variable describing if the loop should try and keep on generating data
         shouldContinue = True
         while shouldContinue:
             try:
                 newline = next(line)
                 newclassifier = next(classifier)
-            except StopIteration:
+            except Exception:
                 # End of the data files
-                shouldContinue = False
-            except IndexError:
-                # Error in getting the data.
-                # this has been fixed but keeping this here so if there is a bug,
-                # It doesn't crash the entire system
-                print("There was an issue with getting the correct information from the file!!!")
+                # make sure that there isn't another iteration
                 newline = None
                 newclassifier = None
                 shouldContinue = False
-            except Exception as e:
-                print("unknown error: {}".format(e))
-                print(newline, newclassifier)
-                newline = None
-                newclassifier = None
-                shouldContinue = False
-
             # No more information from files, end generating data
             if((newline is None) or (newclassifier is None)):
                 break
@@ -71,13 +77,11 @@ class GroupData(object):
             if(classCounter[newclassifier] > minClassCounter):
                 continue
             else:
-                rowcount += 1
                 # Return the flatten row of data and the one hot encoding classifier
                 yield (newline, hotEncoder[newclassifier])
-        # print(rowcount)
-        return None
 
 class Data(object):
+
     '''
     csvfile: type string: Input file in csv format
     width: type int: width of each row for the csv file
@@ -86,6 +90,7 @@ class Data(object):
     middleIndex = The index to start indexing at to avoid getting the edge data since that can't be used
     counts = counts of the classifiers
     '''
+
     def __init__(self, csvfile, width, height, window, counts = {}):
         self.csvfile = csvfile
         self.width = width
@@ -101,6 +106,7 @@ class Data(object):
         if(datatype == 'line'):
             frame = []
             # build a list of frames where each frame is a row of data
+            # This is the starting point for the moving window for getting data
             for _ in range(self.window):
                 row = next(reader)
                 row = list(map(int, row))
@@ -124,16 +130,18 @@ class Data(object):
             frames = self.initializeFrame(reader, "line")
             # For row in csv file
             for row in reader:
+                # all data points must be integers
                 row = list(map(int, row))
                 # loop through the data that doesn't include the edges
                 for currIndex in range(self.middleIndex, self.width - self.middleIndex):
+                    # Find the min and max index to extract from the current frame
                     minIndex = currIndex - self.middleIndex
                     maxIndex = currIndex + self.middleIndex + 1
                     # take part of the row that is the window size so
                     # now you have a widow x window size list of list
-                    newdata = [frame[minIndex: maxIndex] for frame in frames]
+                    dataframe = [frame[minIndex: maxIndex] for frame in frames]
                     #flatten the list of lists
-                    yield [num for data in newdata for num in data]
+                    yield [num for data in dataframe for num in data]
                 #remove top frame and replace it with a new one
                 frames = frames[1:] + [row]
 
@@ -151,7 +159,8 @@ class Data(object):
                 # make sure everything is an int
                 row = list(map(int, row))
                 # For each valid piece of data, yield it 
-                for currIndex in range(self.middleIndex, self.width - self.middleIndex):
+                lastIndex = self.width - self.middleIndex
+                for currIndex in range(self.middleIndex, lastIndex):
                     yield row[currIndex]
 
 class Counts(object):
@@ -162,17 +171,33 @@ class Counts(object):
     counter = counter object to count all the data
     '''
     def __init__(self, data, width, window):
+        #claned binary data
         self.cleandata = data
+        # Width of the file
         self.width = width
+        # half the window size rounded down
         self.halfwindow = window // 2
+        # counter of the classifiers
         self.counter = Counter()
 
     def count(self):
+        '''
+        Counts the classifier data for the based on the window size
+            against the width of the rows
+        '''
         # batch the data into row
+        skipLines = self.halfwindow
         for pos in range(0, len(self.cleandata), self.width):
+            # Will have to skip the first few lines of the data
+            # For the uniform distribution
+            if(skipLines > 0):
+                skipLines -= 1
+                continue
+            # Get extract part of the data
             subdata = self.cleandata[pos: pos + self.width]
             # Get the classifiers from the data that don't include the edge data
             subdata = subdata[self.halfwindow : -1 * self.halfwindow]
+            # update the counter
             self.counter.update(subdata)
 
 def getDemensions(openfile):
@@ -220,7 +245,8 @@ def saveToFile(filename, data, lineLength):
     return filename
 
 def countClassifiers(data, width, window):
-    '''Counts the classifiers based on the data and the window size
+    '''
+    Counts the classifiers based on the data and the window size
         Handled in the Counts class above
     '''
     counts = Counts(data, width, window)
@@ -230,7 +256,9 @@ def countClassifiers(data, width, window):
     return dict(counts.counter)
 
 def saveDemensions(file, width, height, window, cleaneddata, classifier):
-    # Save the data in a json file
+    '''
+    Save the data in a json file
+    '''
     # This data is availible and need for each type of file
     data = {'width':width, 'height':height, 'window': window}
     counts = None
@@ -251,15 +279,23 @@ def saveDemensions(file, width, height, window, cleaneddata, classifier):
     return counts
 
 def getJsonData(file):
+    '''
+    Gets the data from a json file if it exists
+    This will determine if decoding the input and alpha files are necessary
+    '''
     jsonFile = getFileName(file, "json")
     filename = getFileName(file)
     # checks to see if the json file exists
     if(path.isfile(jsonFile)):
         # If it does, then it loads in the data
         data = json.loads((open(jsonFile).read()))
+        # width of the data file
         width = int(data.get('width', 0))
+        # height of the data file in rows of data
         height = int(data.get('height', 0))
+        # window size for the moving window
         window = int(data.get('window', 0))
+        # counts of the classifiers if it is for the classifier file
         counts = data.get('counts', {})
         # Returns the data used to return more data to the neural network
         return (filename, width, height, window, counts)
@@ -276,9 +312,13 @@ def cleanBinary(file, classifier = False, window = 1):
     # recalculate the counts
     if(datawindow != window):
         binaryfile = open(file, "rb")
+        # Width and height describing the data in the file
         width, height = getDemensions(binaryfile)
+        # decode the data from binary to decimal
         cleaneddata = cleandata(binaryfile.read())
+        # Crerate and save the data to a csv file
         filename = saveToFile(getFileName(file), cleaneddata, width)
+        # get the counts from the file and and save the information about the file
         counts  = saveDemensions(file, width, height, window, cleaneddata, classifier)
         binaryfile.close()
     # print(filename, width, height, counts)
@@ -293,6 +333,16 @@ def getDataFromFiles(inputData, alphaData, window):
     return group.getData(window)
 
 def preprocess(inputFile, alphaFile, window):
+    '''
+    Purpose: This function is the main entry point for getting the information from the data files
+        to the neural networks
+
+    Inputs:
+        InputFile: Data file containing input data
+        AlphaFile: Data file containing the classifier data
+        window: window-size for the moving window that generates the data
+    '''
+
     if (window % 2 == 0):
         raise Exception("Window must be an odd Integer")
     if (path.isfile(inputFile) and path.isfile(alphaFile)):
