@@ -187,6 +187,7 @@ class Counts(object):
         '''
         # batch the data into row
         skipLines = self.halfwindow
+        pastUpdate = []
         for pos in range(0, len(self.cleandata), self.width):
             # Will have to skip the first few lines of the data
             # For the uniform distribution
@@ -198,7 +199,9 @@ class Counts(object):
             # Get the classifiers from the data that don't include the edge data
             subdata = subdata[self.halfwindow : -1 * self.halfwindow]
             # update the counter
-            self.counter.update(subdata)
+            if(pastUpdate != []):
+                self.counter.update(pastUpdate)
+            pastUpdate = subdata
 
 def getDemensions(openfile):
     '''Get the height and width from the binary file'''
@@ -219,7 +222,10 @@ def cleandata(binary):
     '''converts from binary to decimal'''
     #convert binary to integers
     # decodes the data
-    return [d for d in binary]
+    print("before:\n{}".format(binary))
+    data =  [d for d in binary]
+    print("After:\n{}".format(data))
+    return data
 
 def getFileName(file, extension = 'csv'):
     '''creates a new file with the given extension in the folder the data is in'''
