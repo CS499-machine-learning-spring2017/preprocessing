@@ -46,8 +46,8 @@ class GroupData(object):
         '''Returns a tuple with the flat data and the corresponding classifier'''
         # get the line and classifier generators to match them up
         # and return them to the neural network
-        line = self.inputData.getLine()
-        classifier = self.classData.getClassifier()
+        lineGen = self.inputData.getLine()
+        classifierGen = self.classData.getClassifier()
 
         # print(self.classData.counts)
         # Find the minimun value of the classifier and limit all results to that 
@@ -56,27 +56,13 @@ class GroupData(object):
         hotEncoder = self.getEncoder(sorted(self.classData.counts.keys()))
         # classification counter
         classCounter = {}
-        # boolean variable describing if the loop should try and keep on generating data
-        shouldContinue = True
-        while shouldContinue:
-            try:
-                newline = next(line)
-                newclassifier = next(classifier)
-            except Exception:
-                # End of the data files
-                # make sure that there isn't another iteration
-                newline = None
-                newclassifier = None
-                shouldContinue = False
+        for line, classifier in zip(lineGen, classifierGen):
             # No more information from files, end generating data
-            if((newline is None) or (newclassifier is None)):
+            if((line is None) or (classifier is None)):
                 break
-
             # See if the classifier is below the max amount
-            classCounter[newclassifier] = classCounter.get(newclassifier, 0) + 1
-            if(classCounter[newclassifier] > minClassCounter):
-                continue
-            else:
+            classCounter[classifier] = classCounter.get(classifier, 0) + 1
+            if(classCounter[classifier] <= minClassCounter):
                 # Return the flatten row of data and the one hot encoding classifier
                 yield (newline, hotEncoder[newclassifier])
 
