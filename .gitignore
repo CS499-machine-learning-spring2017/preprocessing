@@ -6,3 +6,5 @@ data*
 *.pyc
 clean.sh
 *.swp
+*.json
+
