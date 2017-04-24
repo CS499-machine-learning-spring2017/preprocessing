@@ -199,9 +199,11 @@ class Counts(object):
             # Get the classifiers from the data that don't include the edge data
             subdata = subdata[self.halfwindow : -1 * self.halfwindow]
             # update the counter
-            if(pastUpdate != []):
-                self.counter.update(pastUpdate)
-            pastUpdate = subdata
+            if(len(pastUpdate == self.halfwindow)):
+                self.counter.update(pastUpdate[0])
+                pastUpdate = pastUpdate[1:] + subdata
+            else:
+                pastUpdate.append(subdata)
 
 def getDemensions(openfile):
     '''Get the height and width from the binary file'''
