@@ -12,7 +12,7 @@ The purpose of this file is to convert data from the input and alpha (classifier
 into usable data for the neural network
 
 This is done by first opening the binary file and extracting the height and width from the first line.
-Then the second line is one long string of binary data representing an image. From there, the classification are counted. 
+Then the second line is one long string of binary data representing an image. From there, the classification are counted.
 This is so we can proivide a uniform distribution of classifiers to the neural network.
 
 From there, data about the files are saved to a Json file. This is so that if the file is there, then we can assume the file has been processed, thus skipping looping through the data and making the process faster.
@@ -46,39 +46,27 @@ class GroupData(object):
         '''Returns a tuple with the flat data and the corresponding classifier'''
         # get the line and classifier generators to match them up
         # and return them to the neural network
-        line = self.inputData.getLine()
-        classifier = self.classData.getClassifier()
+        line_gen = self.inputData.getLine()
+        classifier_gen = self.classData.getClassifier()
 
         # print(self.classData.counts)
         # Find the minimun value of the classifier and limit all results to that 
         minClassCounter = min(self.classData.counts.values())
         #Create the one hot encoder
+        print(sorted(self.classData.counts.keys()))
         hotEncoder = self.getEncoder(sorted(self.classData.counts.keys()))
         # classification counter
         classCounter = {}
         # boolean variable describing if the loop should try and keep on generating data
+        print(self.classData.counts)
         shouldContinue = True
-        while shouldContinue:
-            try:
-                newline = next(line)
-                newclassifier = next(classifier)
-            except Exception:
-                # End of the data files
-                # make sure that there isn't another iteration
-                newline = None
-                newclassifier = None
-                shouldContinue = False
-            # No more information from files, end generating data
-            if((newline is None) or (newclassifier is None)):
-                break
-
-            # See if the classifier is below the max amount
-            classCounter[newclassifier] = classCounter.get(newclassifier, 0) + 1
-            if(classCounter[newclassifier] > minClassCounter):
-                continue
+        for line, classifier in zip(line_gen, classifier_gen):
+            classCounter[classifier] = classCounter.get(classifier, 0) + 1
+            if(classCounter[classifier] <= minClassCounter):
+                yield (line, hotEncoder[classifier])
             else:
-                # Return the flatten row of data and the one hot encoding classifier
-                yield (newline, hotEncoder[newclassifier])
+                continue
+        print(classCounter)
 
 class Data(object):
 
@@ -107,7 +95,7 @@ class Data(object):
             frame = []
             # build a list of frames where each frame is a row of data
             # This is the starting point for the moving window for getting data
-            for _ in range(self.window):
+            for _ in range(self.window - 1):
                 row = next(reader)
                 row = list(map(int, row))
                 frame.append(row)
@@ -125,6 +113,7 @@ class Data(object):
         '''
         #open the csv file
         with open(self.csvfile) as infile:
+            lastIndex = self.width - self.middleIndex
             reader = csv.reader(infile)
             # initialize the frames used to generate the data
             frames = self.initializeFrame(reader, "line")
@@ -132,36 +121,52 @@ class Data(object):
             for row in reader:
                 # all data points must be integers
                 row = list(map(int, row))
+                frames.append(row)
                 # loop through the data that doesn't include the edges
-                for currIndex in range(self.middleIndex, self.width - self.middleIndex):
+                for currIndex in range(self.middleIndex, lastIndex):
                     # Find the min and max index to extract from the current frame
                     minIndex = currIndex - self.middleIndex
                     maxIndex = currIndex + self.middleIndex + 1
+                    # print(minIndex, maxIndex)
                     # take part of the row that is the window size so
                     # now you have a widow x window size list of list
+                    # print("Getting a new frame")
                     dataframe = [frame[minIndex: maxIndex] for frame in frames]
                     #flatten the list of lists
-                    yield [num for data in dataframe for num in data]
+                    data =  [num for data in dataframe for num in data]
+                    # print("Here is the new data: {}".format(data))
+                    yield data
                 #remove top frame and replace it with a new one
-                frames = frames[1:] + [row]
+                # print('removing the first element')
+                frames.pop(0)
+                # print('ready for the next round')
+                # print(frames)
 
     def getClassifier(self):
         '''
         Opens a csv and yields the number in the middle of the moving window
         '''
         # open the csv file and make it a csv object
+        infile = open(self.csvfile, 'r')
+        data = infile.read()
+        print(data)
+        infile.seek(0)
+        infile.close()
         with open(self.csvfile) as infile:
             reader = csv.reader(infile)
             # remove the first few line in the csv to get rid of the edge data
             _ = self.initializeFrame(reader, "classifier")
             # For row in csv file
+            lastIndex = self.width - self.middleIndex
             for row in reader:
                 # make sure everything is an int
                 row = list(map(int, row))
                 # For each valid piece of data, yield it 
-                lastIndex = self.width - self.middleIndex
                 for currIndex in range(self.middleIndex, lastIndex):
-                    yield row[currIndex]
+                    classifier = row[currIndex]
+                    yield classifier
+                print(row)
+
 
 class Counts(object):
     '''
@@ -199,11 +204,11 @@ class Counts(object):
             # Get the classifiers from the data that don't include the edge data
             subdata = subdata[self.halfwindow : -1 * self.halfwindow]
             # update the counter
-            if(len(pastUpdate == self.halfwindow)):
-                self.counter.update(pastUpdate[0])
-                pastUpdate = pastUpdate[1:] + subdata
-            else:
-                pastUpdate.append(subdata)
+            if(len(pastUpdate) == self.halfwindow):
+                data = pastUpdate.pop(0)
+                self.counter.update(data)
+            print(pastUpdate, subdata)
+            pastUpdate.append(subdata)
 
 def getDemensions(openfile):
     '''Get the height and width from the binary file'''
