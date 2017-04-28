@@ -17,3 +17,17 @@ from preprocessing import preprocess
 for (data, classifier) in preprocess( inputFile, alphaFile, windowsize):
     #do_something_with_data()
 ```
+
+## Testing
+testing uses the python unit test package. To run just use:
+```
+python3 test_preprocessing.py
+```
+
+There are 4 tests:
+1. Make sure the csv files get created
+2. Make sure the Json files get created
+3. Make sure the alpha Json file has the correct counts
+4. Make sure the output data from the test files match the expected outupts hardcoded in the file
+
+If all of these test pass, then any changes made are correct and didn't effect the final output.
