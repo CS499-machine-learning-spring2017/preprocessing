@@ -46,13 +46,10 @@ class GroupData(object):
         '''Returns a tuple with the flat data and the corresponding classifier'''
         # get the line and classifier generators to match them up
         # and return them to the neural network
-<<<<<<< HEAD
         line_gen = self.inputData.getLine()
         classifier_gen = self.classData.getClassifier()
-=======
         lineGen = self.inputData.getLine()
         classifierGen = self.classData.getClassifier()
->>>>>>> afd2779c52fa2f94719388d8eca9b62c91821055
 
         # print(self.classData.counts)
         # Find the minimun value of the classifier and limit all results to that 
@@ -62,7 +59,6 @@ class GroupData(object):
         hotEncoder = self.getEncoder(sorted(self.classData.counts.keys()))
         # classification counter
         classCounter = {}
-<<<<<<< HEAD
         # boolean variable describing if the loop should try and keep on generating data
         # print(self.classData.counts)
         shouldContinue = True
@@ -73,7 +69,6 @@ class GroupData(object):
             else:
                 continue
         # print(classCounter)
-=======
         for line, classifier in zip(lineGen, classifierGen):
             # No more information from files, end generating data
             if((line is None) or (classifier is None)):
@@ -83,7 +78,6 @@ class GroupData(object):
             if(classCounter[classifier] <= minClassCounter):
                 # Return the flatten row of data and the one hot encoding classifier
                 yield (newline, hotEncoder[newclassifier])
->>>>>>> afd2779c52fa2f94719388d8eca9b62c91821055
 
 class Data(object):
 
