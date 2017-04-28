@@ -32,20 +32,24 @@ class TestPreprocessing(unittest.TestCase):
     expectedCsvAlpha = 'test_data/cleaned_test.alpha.csv'
 
     def setUp(self):
+        '''Run the preprocess function to initialize all of the files and variables'''
         print("Starting to run preprocessing")
         self.output = preprocess(self.TEST_FILE_INPUT, self.TEST_FILE_ALPHA, 3)
 
     def test_check_for_csv_files(self):
+        '''Test to make sure the csv files were created'''
         inputCsvFileExists = os.path.isfile(self.expectedCsvInput)
         alphaCsvFileExists = os.path.isfile(self.expectedCsvAlpha)
         self.assertEqual(bool(inputCsvFileExists and alphaCsvFileExists), True)
 
     def test_check_for_json_files(self):
+        '''Test to make sure the json files were created'''
         inputJsonFileExists = os.path.isfile(self.expectedJsonInput)
         alphaJsonFileExists = os.path.isfile(self.expectedJsonAlpha)
         self.assertEqual(bool(inputJsonFileExists and alphaJsonFileExists), True)
 
     def test_check_counts_in_json_file(self):
+        '''Test to make sure the counts in the json file are correct'''
         infile_count = {}
 
         if(os.path.isfile(self.expectedJsonAlpha)):
@@ -57,6 +61,7 @@ class TestPreprocessing(unittest.TestCase):
         self.assertEqual(cleaned_data, self.counts)
 
     def test_check_output(self):
+        '''Test to make sure the data being sent back to the neural network is correct with the same feature items and classifier data'''
         # This is the main test since it looks for completeness in data
         data = [i for i in self.output]
         self.assertEqual(data, self.checkedOutput)
