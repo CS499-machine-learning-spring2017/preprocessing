@@ -159,10 +159,6 @@ class Data(object):
         '''
         # open the csv file and make it a csv object
         infile = open(self.csvfile, 'r')
-        data = infile.read()
-        # print(data)
-        infile.seek(0)
-        infile.close()
         with open(self.csvfile) as infile:
             reader = csv.reader(infile)
             # remove the first few line in the csv to get rid of the edge data
