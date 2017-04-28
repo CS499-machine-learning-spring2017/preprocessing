@@ -53,12 +53,12 @@ class GroupData(object):
         # Find the minimun value of the classifier and limit all results to that 
         minClassCounter = min(self.classData.counts.values())
         #Create the one hot encoder
-        print(sorted(self.classData.counts.keys()))
+#        print(sorted(self.classData.counts.keys()))
         hotEncoder = self.getEncoder(sorted(self.classData.counts.keys()))
         # classification counter
         classCounter = {}
         # boolean variable describing if the loop should try and keep on generating data
-        print(self.classData.counts)
+        # print(self.classData.counts)
         shouldContinue = True
         for line, classifier in zip(line_gen, classifier_gen):
             classCounter[classifier] = classCounter.get(classifier, 0) + 1
@@ -66,7 +66,7 @@ class GroupData(object):
                 yield (line, hotEncoder[classifier])
             else:
                 continue
-        print(classCounter)
+        # print(classCounter)
 
 class Data(object):
 
@@ -149,7 +149,7 @@ class Data(object):
         # open the csv file and make it a csv object
         infile = open(self.csvfile, 'r')
         data = infile.read()
-        print(data)
+        # print(data)
         infile.seek(0)
         infile.close()
         with open(self.csvfile) as infile:
@@ -165,7 +165,7 @@ class Data(object):
                 for currIndex in range(self.middleIndex, lastIndex):
                     classifier = row[currIndex]
                     yield classifier
-                print(row)
+                # print(row)
 
 
 class Counts(object):
@@ -207,7 +207,7 @@ class Counts(object):
             if(len(pastUpdate) == self.halfwindow):
                 data = pastUpdate.pop(0)
                 self.counter.update(data)
-            print(pastUpdate, subdata)
+            # print(pastUpdate, subdata)
             pastUpdate.append(subdata)
 
 def getDemensions(openfile):
@@ -229,9 +229,9 @@ def cleandata(binary):
     '''converts from binary to decimal'''
     #convert binary to integers
     # decodes the data
-    print("before:\n{}".format(binary))
+    # print("before:\n{}".format(binary))
     data =  [d for d in binary]
-    print("After:\n{}".format(data))
+    # print("After:\n{}".format(data))
     return data
 
 def getFileName(file, extension = 'csv'):
